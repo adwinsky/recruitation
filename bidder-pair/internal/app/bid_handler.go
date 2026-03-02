@@ -33,7 +33,7 @@ func BidHandler(
 			return
 		}
 
-		ok, reason := f.Filter(br)
+		ads, ok, reason := f.SelectAds(br)
 		if !ok {
 			kp.Send(producer.Event{
 				Type:       "filtered",
@@ -50,6 +50,7 @@ func BidHandler(
 			RequestID: br.ID,
 			UserID:    br.User.ID,
 			ImpIDs:    br.ImpIDs(),
+			Ads:       ads,
 		})
 		if err != nil {
 			http.Error(w, "decision error", http.StatusBadGateway)

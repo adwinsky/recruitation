@@ -25,7 +25,7 @@ func BuildJSON(br *openrtb.BidRequest, dec decision.DecisionResponse) []byte {
 	buf.WriteByte(',')
 
 	buf.WriteString(`"crid":"`)
-	buf.WriteString(dec.CreativeID)
+	buf.WriteString(dec.AdID)
 	buf.WriteString(`"`)
 
 	buf.WriteString(`}]}]}`)

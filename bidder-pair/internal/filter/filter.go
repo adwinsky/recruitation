@@ -38,8 +38,11 @@ func New(cfg Config) *Filter {
 	}
 }
 
-func (f *Filter) Filter(br *openrtb.BidRequest) (bool, string) {
+func (f *Filter) SelectAds(br *openrtb.BidRequest) ([]*store.Ad, bool, string) {
 	now := time.Now()
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
 
 	// reset 1-minute window
 	if now.Sub(f.window) >= time.Minute {
@@ -49,8 +52,15 @@ func (f *Filter) Filter(br *openrtb.BidRequest) (bool, string) {
 		}
 	}
 
+	if len(br.Imp) == 0 {
+		return nil, false, "no_imp"
+	}
+
+	ads := store.GetAds()
+	selected := make([]*store.Ad, 0, len(ads))
+
 	// frequency capping per ad
-	for _, ad := range store.GetAds() {
+	for _, ad := range ads {
 		f.filterCounter++
 
 		key := capKey{
@@ -59,27 +69,27 @@ func (f *Filter) Filter(br *openrtb.BidRequest) (bool, string) {
 		}
 
 		f.perUser[key]++
-
 		if f.perUser[key] > f.cfg.MaxPerMinute {
-			return false, "freqcap"
+			continue // skip only this ad
 		}
 
 		// expensive scoring simulation
 		score := expensiveScore([]byte(br.User.ID), ad)
 		if score%10 == 0 {
-			return false, "low_score"
+			continue
 		}
+
+		selected = append(selected, ad)
 	}
 
-	// random drop simulation
-	drop := f.rng.Intn(100) < 10
-	if drop {
-		return false, "random_drop"
+	// random drop simulation (whole request)
+	if f.rng.Intn(100) < 10 {
+		return nil, false, "random_drop"
 	}
 
-	if len(br.Imp) == 0 {
-		return false, "no_imp"
+	if len(selected) == 0 {
+		return nil, false, "no_ads_after_filter"
 	}
 
-	return true, "ok"
+	return selected, true, "ok"
 }

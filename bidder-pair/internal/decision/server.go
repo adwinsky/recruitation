@@ -62,9 +62,9 @@ func (s *Server) handleDecision(w http.ResponseWriter, r *http.Request) {
 	allow := dr.UserID != "blocked"
 
 	out := DecisionResponse{
-		Allow:      allow,
-		Price:      price,
-		CreativeID: "cr-123",
+		Allow: allow,
+		Price: price,
+		AdID:  "cr-123",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
