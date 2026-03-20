@@ -59,7 +59,6 @@ func (f *Filter) SelectAds(br *openrtb.BidRequest) ([]*store.Ad, bool, string) {
 	ads := store.GetAds()
 	selected := make([]*store.Ad, 0, len(ads))
 
-	// frequency capping per ad
 	for _, ad := range ads {
 		f.filterCounter++
 
@@ -68,14 +67,25 @@ func (f *Filter) SelectAds(br *openrtb.BidRequest) ([]*store.Ad, bool, string) {
 			ad:   ad.ID,
 		}
 
+		// aerospike request?
 		f.perUser[key]++
 		if f.perUser[key] > f.cfg.MaxPerMinute {
-			continue // skip only this ad
+			continue
 		}
 
-		// expensive scoring simulation
-		score := expensiveScore([]byte(br.User.ID), ad)
-		if score%10 == 0 {
+		// repeatedSegmentCheck has high CPU cost and rejects ~30% of ads on average.
+		if repeatedSegmentCheck(br.User.ID) {
+			continue
+		}
+
+		// requestHashFilter has low CPU cost and rejects 70% of ads on average.
+		if requestHashFilter(ad, br)%5 == 0 {
+			continue
+		}
+
+		// categoryFilter has high CPU cost It rejects ~50% of ads on average.
+		// br.Site.Category has low cardinality
+		if !siteCategoryFilter(ad, br.Site.Category) {
 			continue
 		}
 
@@ -92,4 +102,25 @@ func (f *Filter) SelectAds(br *openrtb.BidRequest) ([]*store.Ad, bool, string) {
 	}
 
 	return selected, true, "ok"
+}
+
+// repeatedSegmentCheck has high CPU cost and rejects ~30% of ads on average.
+func repeatedSegmentCheck(userID string) bool {
+	time.Sleep(150 * time.Microsecond)
+	return len(userID)%3 == 0
+}
+
+// requestHashFilter has low CPU cost and rejects 70% of ads on average.
+func requestHashFilter(ad *store.Ad, br *openrtb.BidRequest) int {
+	time.Sleep(100 * time.Microsecond)
+	return len(br.User.ID) + len(ad.ID)
+}
+
+func siteCategoryFilter(ad *store.Ad, category string) bool {
+	for _, c := range ad.Categories {
+		if c == category {
+			return true
+		}
+	}
+	return false
 }

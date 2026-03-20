@@ -1,7 +1,8 @@
 package store
 
 type Ad struct {
-	ID string
+	ID         string
+	Categories []string
 }
 
 func GetAds() []*Ad {

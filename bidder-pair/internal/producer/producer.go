@@ -3,7 +3,6 @@ package producer
 import (
 	"context"
 	"log"
-	"sync"
 	"time"
 )
 
@@ -16,25 +15,24 @@ type ProducerConfig struct {
 type Producer struct {
 	logger *log.Logger
 
-	mu sync.Mutex
-
 	flushInterval time.Duration
-	slowSend      time.Duration
 }
 
 func NewProducer(cfg ProducerConfig) *Producer {
 	p := &Producer{
 		logger:        cfg.Logger,
 		flushInterval: cfg.FlushInterval,
-		slowSend:      cfg.SlowSend,
 	}
 	return p
 }
 
-func (p *Producer) Send(e Event) {
+func (p *Producer) Enqueue(event *Event) {
+}
+
+func (p *Producer) SendToGCP(event []*Event) {
 	go func() {
 		// slow send
-		time.Sleep(p.slowSend)
+		time.Sleep(500 * time.Millisecond)
 	}()
 }
 

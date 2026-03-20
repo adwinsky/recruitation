@@ -26,8 +26,9 @@ type Video struct {
 }
 
 type Site struct {
-	Domain string `json:"domain"`
-	Page   string `json:"page"`
+	Domain   string `json:"domain"`
+	Page     string `json:"page"`
+	Category string `json:"category"`
 }
 
 type App struct {

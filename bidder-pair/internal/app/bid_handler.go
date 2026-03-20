@@ -35,7 +35,7 @@ func BidHandler(
 
 		ads, ok, reason := f.SelectAds(br)
 		if !ok {
-			kp.Send(producer.Event{
+			kp.Enqueue(&producer.Event{
 				Type:       "filtered",
 				Request:    br,
 				RawRequest: body,
@@ -59,7 +59,7 @@ func BidHandler(
 
 		respBody := response.BuildJSON(br, decResp)
 
-		kp.Send(producer.Event{
+		kp.Enqueue(&producer.Event{
 			Type:       "bid",
 			Request:    br,
 			RawRequest: body,
